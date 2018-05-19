@@ -23,13 +23,7 @@ import os
 
 app = Eve()
 
-if 'PORT' in os.environ:
-    port = int(os.environ.get('PORT'))
-    debug = False
-else:
-    # development enviroment
-    port = 5000
-    debug = True
+port = int(os.environ.get('PORT', 5000))
 
 if __name__ == '__main__':
-    app.run(port=port, debug=debug)
+    app.run(port=port, debug=False)
