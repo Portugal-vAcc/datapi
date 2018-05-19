@@ -18,4 +18,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Portugal-vAcc Data API. If not, see <http://www.gnu.org/licenses/>.
 """
-DOMAIN = {'news': {}}
+import os
+
+MONGO_URI = os.environ.get('MONGO_URI',
+                           'mongodb://localhost:27017/vaccdatapi')
+
+NEWS_ENDPOINT = {
+    'schema': {
+        'title': {
+            'type': 'string',
+            'required': True,
+        },
+        'content': {
+            'type': 'string',
+            'required': True,
+        },
+    },
+    'resource_methods': ['GET', 'POST'],
+}
+DOMAIN = {'news': NEWS_ENDPOINT}

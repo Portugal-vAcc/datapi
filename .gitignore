@@ -4,3 +4,6 @@ lib
 node_modules
 package-lock.json
 pip-selfcheck.json
+
+local
+share

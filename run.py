@@ -19,8 +19,17 @@ You should have received a copy of the GNU General Public License
 along with Portugal-vAcc Data API. If not, see <http://www.gnu.org/licenses/>.
 """
 from eve import Eve
+import os
 
 app = Eve()
 
+if 'PORT' in os.environ:
+    port = int(os.environ.get('PORT'))
+    debug = False
+else:
+    # development enviroment
+    port = 5000
+    debug = True
+
 if __name__ == '__main__':
-    app.run()
+    app.run(port=port, debug=debug)
