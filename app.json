@@ -1,0 +1,7 @@
+{
+  "name": "Portugal vAcc Data API",
+  "description": "",
+  "repository": "https://github.com/Portugal-vAcc/datapi",
+  "keywords": ["python", "eve", "Flask" ],
+  "addons": [ "mongolab" ]
+}
