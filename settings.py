@@ -35,5 +35,13 @@ NEWS_ENDPOINT = {
         },
     },
     'resource_methods': ['GET', 'POST'],
+    'item_methods': ['GET', 'PATCH', 'DELETE'],
 }
 DOMAIN = {'news': NEWS_ENDPOINT}
+
+X_DOMAINS = '*'
+X_HEADERS = [
+    'content-type',
+    'if-match',
+    'if-none-match',
+]
