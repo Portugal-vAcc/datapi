@@ -32,7 +32,7 @@ def login():
     vatsimsso = VatsimSSO(app.config['VATSIM_SSO_SERVER'],
                           consumer_key=app.config['VATSIM_SSO_KEY'],
                           consumer_secret=app.config['VATSIM_SSO_SECRET'],
-                          callback_uri=url_for('callback'))
+                          callback_uri=url_for('callback', _external=True))
 
     oauth_token = vatsimsso.login_token()
     redirect_uri = (app.config['VATSIM_SSO_SERVER'] +
