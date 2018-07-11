@@ -1,60 +1,59 @@
-__author__ = 'Nick Harasym 1115151'
-
 from requests_oauthlib import OAuth1
 import requests
-
 
 class VatsimSSO():
 
     def __init__(self,
-                 base_url,
-                 consumer_key,
-                 consumer_secret,
-                 callback_uri=None,
-                 oauth_allow_suspended=0,
-                 oauth_allow_inactive=0):
-        self.consumer_key = consumer_key
-        self.consumer_secret = consumer_secret
-        self.call_backuri = callback_uri
-        self.base_url = base_url
-        self.verifier = None
-        self.token = None
-        self.oauth_allow_suspended = oauth_allow_suspended
-        self.request_token = None
-        self.oauth_allow_inactive = oauth_allow_inactive
+                 url,
+                 key,
+                 secret):
+        self.url = url
+        self.key = key
+        self.secret = secret
 
-    def login_token(self):
-        extra_params = {'oauth_allow_suspended': self.oauth_allow_suspended,
-                        'oauth_allow_inactive': self.oauth_allow_inactive}
+    def get_oauth_token(self,
+                        redirect='oob',
+                        allow_suspended=False,
+                        allow_inactive=False):
+        """ Handles the first step of getting an oauth token from VATSIM.
 
-        prepare = OAuth1(self.consumer_key,
-                         client_secret=self.consumer_secret,
-                         callback_uri=self.call_backuri,
-                         signature_method='HMAC-SHA1',
-                         signature_type='query')
+        Store the token_secret somewhere and redirect the user to the login page
+        with the token.
+        """
+        params = {'oauth_allow_suspended': 1 if allow_suspended else 0,
+                  'oauth_allow_inactive': 1 if allow_inactive else 0}
 
-        request = requests.post(self.base_url + '/login_token/',
-                                auth=prepare,
-                                params=extra_params).json()
-        print(request)
-        self.request_token = request['token']['oauth_token']
+        auth = OAuth1(
+            self.key,
+            client_secret=self.secret,
+            callback_uri=redirect,
+            signature_method='HMAC-SHA1',
+            signature_type='query')
 
-        return str(self.request_token)
+        request = requests.post(
+            self.url + '/api/login_token/',
+            auth=auth,
+            params=params
+        ).json()
 
-    def login_return(self):
+        return request['token']
 
-        if self.verifier is None:
-            return 'Please provide verifier'
+    def get_user_details(self, token, token_secret, verifier):
+        """Queries VATSIM for an authenticated user's details.
 
-        if self.token is None:
-            return 'Please provide token'
+        """
+        auth = OAuth1(
+            self.key,
+            client_secret=self.secret,
+            signature_method='HMAC-SHA1',
+            verifier=verifier,
+            resource_owner_key=token,
+            resource_owner_secret=token_secret,
+            signature_type='query')
 
-        prepare = OAuth1(self.consumer_key,
-                         client_secret=self.consumer_secret,
-                         signature_method='HMAC-SHA1',
-                         verifier=self.verifier,
-                         resource_owner_key=self.token,
-                         signature_type='query')
-        request = requests.post(self.base_url + '/login_return/',
-                                auth=prepare).json()
-        return request
+        user = requests.post(
+            self.url + '/api/login_return/',
+            auth=auth
+        ).json()
+
+        return user

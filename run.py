@@ -20,28 +20,29 @@ along with Portugal-vAcc Data API. If not, see <http://www.gnu.org/licenses/>.
 """
 from eve import Eve
 from flask import redirect, request, url_for
-from vatsimsso import VatsimSSO
-# from redis import StrictRedis, ConnectionPool
 import os
+from vatsimsso import VatsimSSO
+import redis
+import json
 
 app = Eve()
+redis = redis.from_url(app.config['REDIS_URL'], decode_responses=True)
+vatsim = VatsimSSO(app.config['VATSIM_SSO_SERVER'],
+                  key=app.config['VATSIM_SSO_KEY'],
+                  secret=app.config['VATSIM_SSO_SECRET'])
 
 @app.route('/login')
 def login():
-    # advise VATSIM
-    vatsimsso = VatsimSSO(app.config['VATSIM_SSO_SERVER'],
-                          consumer_key=app.config['VATSIM_SSO_KEY'],
-                          consumer_secret=app.config['VATSIM_SSO_SECRET'],
-                          callback_uri=url_for('callback', _external=True))
+    oauth_token = vatsim.get_oauth_token(
+        redirect=url_for('callback', _external=True))
 
-    oauth_token = vatsimsso.login_token()
-    redirect_uri = (app.config['VATSIM_SSO_SERVER'] +
-                    '/pre_login/?oauth_token=%s') % oauth_token
+    redirect_uri = (
+          app.config['VATSIM_SSO_SERVER']
+        + '/auth/pre_login/?oauth_token=%s'
+    ) % oauth_token['oauth_token']
 
-    # store the user request
-    # redis = StrictRedis()
-    # redis.connection_pool = ConnectionPool.from_url(app.config['REDIS_URL'])
-    # redis.set(oauth_token, False)
+    redis.set(oauth_token['oauth_token'], oauth_token['oauth_token_secret'])
+    redis.expire(oauth_token['oauth_token'], 3600)
 
     return redirect(redirect_uri, code=302)
 
@@ -50,18 +51,18 @@ def callback():
     oauth_token = request.args.get('oauth_token')
     oauth_verifier = request.args.get('oauth_verifier')
 
-    # redis = StrictRedis()
-    # redis.connection_pool = ConnectionPool.from_url(app.config['REDIS_URL'])
-    # status = redis.get(oauth_token)
+    oauth_token_secret = redis.get(oauth_token)
+    redis.delete(oauth_token)
 
-    vatsimsso = VatsimSSO(app.config['VATSIM_SSO_SERVER'],
-                          consumer_key=app.config['VATSIM_SSO_KEY'],
-                          consumer_secret=app.config['VATSIM_SSO_SECRET'])
-    vatsimsso.token = status
-    vatsimsso.verifier = oauth_verifier
-    user = vatsimsso.login_return()
+    response = vatsim.get_user_details(
+        oauth_token,
+        oauth_token_secret,
+        oauth_verifier)
 
-    print(user)
+    if response['request']['result'] == 'success':
+        return json.dumps(response['user']), 200
+
+    return json.dumps(response['request']['message']), 401
 
 port = int(os.environ.get('PORT', 5000))
 debug = port == 5000

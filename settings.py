@@ -20,10 +20,10 @@ along with Portugal-vAcc Data API. If not, see <http://www.gnu.org/licenses/>.
 """
 import os
 
-# live: https://cert.vatsim.net/sso/api
-# demo: http://sso.hardern.net/server/api
+# live: https://cert.vatsim.net/sso
+# demo: http://sso.hardern.net/server
 VATSIM_SSO_SERVER = os.environ.get('VATSIM_SSO_SERVER',
-                                   'http://sso.hardern.net/server/api')
+                                   'http://sso.hardern.net/server')
 
 # Public demo credentials
 # VATSIM_SSO_KEY = os.environ.get('VATSIM_SSO_KEY', 'SSO_DEMO')
