@@ -21,7 +21,7 @@ along with Portugal-vAcc Data API. If not, see <http://www.gnu.org/licenses/>.
 from eve import Eve
 from flask import redirect, request, url_for
 from vatsimsso import VatsimSSO
-from redis import StrictRedis, ConnectionPool
+# from redis import StrictRedis, ConnectionPool
 import os
 
 app = Eve()
