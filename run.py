@@ -19,8 +19,10 @@ You should have received a copy of the GNU General Public License
 along with Portugal-vAcc Data API. If not, see <http://www.gnu.org/licenses/>.
 """
 from eve import Eve
-from flask import redirect, request, url_for
+from eve.render import JSONRenderer
+from flask import redirect, request, url_for, current_app
 import os
+from datetime import datetime
 from vatsimsso import VatsimSSO
 import redis
 import json
@@ -42,7 +44,7 @@ def login():
     ) % oauth_token['oauth_token']
 
     redis.set(oauth_token['oauth_token'], oauth_token['oauth_token_secret'])
-    redis.expire(oauth_token['oauth_token'], 3600)
+    redis.expire(oauth_token['oauth_token'], 30 * 60)
 
     return redirect(redirect_uri, code=302)
 
@@ -58,11 +60,25 @@ def callback():
         oauth_token,
         oauth_token_secret,
         oauth_verifier)
+    if response['request']['result'] != 'success':
+        return json.dumps(response['request']['message']), 401
+    vatsim_user = response['user']
 
-    if response['request']['result'] == 'success':
-        return json.dumps(response['user']), 200
+    user_doc = current_app.data.driver.db['users'].find_one({
+        'vatsim_identity.id': vatsim_user['id']})
+    if not user_doc:
+        now = datetime.utcnow()
+        user_doc = {
+            '_created': now,
+            '_updated': now,
+            'vatsim_identity': vatsim_user}
+        user_doc['_id'] = current_app.data.driver.db['users'].insert_one(
+            user_doc).inserted_id
 
-    return json.dumps(response['request']['message']), 401
+    redis.set(oauth_verifier, user_doc['_id'])
+    redis.expire(oauth_verifier, 24 * 60 * 60)
+
+    return JSONRenderer().render(user_doc), 200
 
 port = int(os.environ.get('PORT', 5000))
 debug = port == 5000
